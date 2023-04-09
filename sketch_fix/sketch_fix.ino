@@ -1,87 +1,117 @@
-#define CLK 2
-#define DT 4
+#define PIN_POT_1 A0 //потенциометр 1
+#define PIN_POT_2 A1 //потенциометр 2
 
-#include "EncButton.h"
+#define PIN_VRX_1 A2 //Джойстик 1 (oX)
+#define PIN_VRY_1 A3 //Джойстик 1 (oY)
+#define PIN_VRBUTTON_1 12 //Джойстик 1 (кнопка)
 
-EncButton<EB_TICK, CLK, DT> enc;
+#define PIN_VRX_2 A4 //Джойстик 2 (oX)
+#define PIN_VRY_2 A5 //Джойстик 2 (oY)
+#define PIN_VRBUTTON_2 13 //Джойстик 2 (кнопка)
 
-byte i, j;
-byte p, k;
-byte os;
-byte EncIsRight;
-byte EncIsLeft;
+#define PIN_BUTTON_1 10 //Кнопка 1
+#define PIN_BUTTON_2 11 //Кнопка 2
 
-uint32_t myTimer;
-int period = 100; 
+#define PIN_LED_1 2 //LED 1
+#define PIN_LED_2 3 //LED 2
+#define PIN_LED_3 4 //LED 3
+#define PIN_LED_4 5 //LED 4
+#define PIN_LED_5 6 //LED 5
+#define PIN_LED_6 7 //LED 6
+#define PIN_LED_7 8 //LED 7
+#define PIN_LED_8 9 //LED 8
+
+uint32_t myTimer; // Текущее время с момента старта
+int period = 100; // Период отправки пакетов
+int limit = 255; // Верхняя граница приведения значений (по умолчанию 255)
+
+// Переменные для считанных показаний, приведенные к значениям в приделах 1 байта
+byte pot1, pot2, vrx1, vry1, vrx2, vry2; //Потенциометр 1-2, Джойстик1 x-y, Джойстик2 x-y
+
+// Переменные цифрового состояния кнопок
+int vrbutton1, vrbutton2, button1, button2;
+
+// Байтовая переменная состояния кнопок
+byte buttonStatus; //Побитно: [_, _, _, _, vrbutton2, vrbutton1, button2, button1]
+
+// Переменные для полученных данных (состояние светодиодов)
+byte ledStatus; //Побитно: [LED8, LED7, LED6, LED5, LED4, LED3, LED2, LED1]
+
+// Функция чтения значений с пинов
+// analogRead возвращает значения от 0 до 1023, которые надо привести к значениям в пределах 1 байта
+void readData() {
+  pot1=map(analogRead(PIN_POT_1), 0, 1023, 0, limit);
+  pot2=map(analogRead(PIN_POT_2), 0, 1023, 0, limit);
+  vrx1=map(analogRead(PIN_VRX_1), 0, 1023, 0, limit);
+  vry1=map(analogRead(PIN_VRY_1), 0, 1023, 0, limit);
+  vrx2=map(analogRead(PIN_VRX_2), 0, 1023, 0, limit);
+  vry2=map(analogRead(PIN_VRY_2), 0, 1023, 0, limit);
+
+  button1=digitalRead(PIN_BUTTON_1);
+  button2=digitalRead(PIN_BUTTON_1);
+  vrbutton1=digitalRead(PIN_VRBUTTON_1);
+  vrbutton2=digitalRead(PIN_VRBUTTON_2);
+  
+  buttonStatus=0;
+  if (button1) buttonStatus |= (1<<0); // Запись состояния кнопки button1 в 0 байт buttonStatus и тд
+  if (button2) buttonStatus |= (1<<1);
+  if (vrbutton1) buttonStatus |= (1<<2);
+  if (vrbutton2) buttonStatus |= (1<<3);
+}
+
+// Функция получения данных
+void getData() {
+  if (Serial.available() != 0) {
+    ledStatus = Serial.read();
+  }
+}
+
+// Функция подачи напряжения на пины светодиодов
+void setLed() {
+  digitalWrite(PIN_LED_1, ledStatus&(1<<0));
+  digitalWrite(PIN_LED_2, ledStatus&(1<<1));
+  digitalWrite(PIN_LED_3, ledStatus&(1<<2));
+  digitalWrite(PIN_LED_4, ledStatus&(1<<3));
+  digitalWrite(PIN_LED_5, ledStatus&(1<<4));
+  digitalWrite(PIN_LED_6, ledStatus&(1<<5));
+  digitalWrite(PIN_LED_7, ledStatus&(1<<6));
+  digitalWrite(PIN_LED_8, ledStatus&(1<<7));
+}
+
+// Функция отправки данных
+void sendData() {
+    Serial.write(pot1);
+    Serial.write(pot2);
+    Serial.write(vrx1);
+    Serial.write(vry1);
+    Serial.write(vrx2);
+    Serial.write(vry2);
+    Serial.write(buttonStatus);
+}
 
 void setup() {
   myTimer = millis();
-
   Serial.begin(9600);
 
-  pinMode(A4, INPUT_PULLUP);
-  pinMode(A2, INPUT);
-  pinMode(A6, INPUT);
-  pinMode(3, OUTPUT);
-  digitalWrite(3, 0);
+  // Настройка пинов с LED на выход
+  pinMode(PIN_LED_1, OUTPUT);
+  pinMode(PIN_LED_2, OUTPUT);
+  pinMode(PIN_LED_3, OUTPUT);
+  pinMode(PIN_LED_4, OUTPUT);
+  pinMode(PIN_LED_5, OUTPUT);
+  pinMode(PIN_LED_6, OUTPUT);
+  pinMode(PIN_LED_7, OUTPUT);
+  pinMode(PIN_LED_8, OUTPUT);
 }
 
 void loop() {
-
-
-  // обязательная функция отработки. Должна постоянно опрашиваться
-  enc.tick();
-
-  // Проверка на факт движения энкодера
-  if (enc.right()) {
-    EncIsRight = 1;
-  }
-
-  if (enc.left()) {
-    EncIsLeft = 1;
-  }
-
-
-  // делает какую то работу с кнопкой
-  if ( digitalRead(A4) == 0  &&  j == 0) {
-    i = !i;
-    j = 1;
-  }
-
-  // делает какую то работу с кнопкой
-  if ( digitalRead(A4) == 1 && j == 1) {
-    j = 0;
-  }
-
-  //Считывание с аналогового порта 0, 1023 и производится преобразование к байтовым значениям A, B, 
-  p = map(analogRead(A2), 0, 1023, 0, 255);
-  k = map(analogRead(A6), 0, 1023, 0, 100); // приводится не к 0-255, а к 0-100, просто потому что так надо
-
-  //Отправление данных по таймеру
   if (millis() - myTimer >= period) {
     myTimer += period;
 
-    //Чтение из порта
-    if (Serial.available() != 0) {
-      os = Serial.read();
-      if ((os < p + 10 && os > p - 10) || i == 0) {
-        digitalWrite(3, 0);
-      }
-      else {
-        digitalWrite(3, 1);
-      }
-    }
-
-    // Передача в порт обмена данными с SimInTech
-    Serial.write(i);
-    Serial.write(p);
-    Serial.write(k);
-    Serial.write(EncIsRight);
-    Serial.write(EncIsLeft);
-
-    //Обнуление после отправки
-    EncIsRight = 0;
-    EncIsLeft = 0;
+    getData(); // Получаем данные из SimInTech
+    setLed(); // Переводим светодиоды в переданное состояние
+    readData(); // Считываем данные с аналоговых и цифровых пинов
+    sendData(); // Передаем данные в SimInTech
   }
 
 }
