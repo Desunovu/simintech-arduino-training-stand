@@ -48,15 +48,15 @@ void readData() {
   vry2=map(analogRead(PIN_VRY_2), 0, 1023, 0, limit);
 
   button1=digitalRead(PIN_BUTTON_1);
-  button2=digitalRead(PIN_BUTTON_1);
+  button2=digitalRead(PIN_BUTTON_2);
   vrbutton1=digitalRead(PIN_VRBUTTON_1);
   vrbutton2=digitalRead(PIN_VRBUTTON_2);
   
   buttonStatus=0;
-  if (button1) buttonStatus |= (1<<0); // Запись состояния кнопки button1 в 0 байт buttonStatus и тд
-  if (button2) buttonStatus |= (1<<1);
-  if (vrbutton1) buttonStatus |= (1<<2);
-  if (vrbutton2) buttonStatus |= (1<<3);
+  if (button1) buttonStatus |= (1<<0); // Запись состояния кнопки button1 в bit_0
+  if (button2) buttonStatus |= (1<<1); // bit_1
+  if (vrbutton1) buttonStatus |= (1<<2); // bit_2
+  if (vrbutton2) buttonStatus |= (1<<3); // bit_3
 }
 
 // Функция получения данных
