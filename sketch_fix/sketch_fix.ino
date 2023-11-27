@@ -53,10 +53,10 @@ void readData() {
   vrbutton2=digitalRead(PIN_VRBUTTON_2);
   
   buttonStatus=0;
-  if (button1) buttonStatus |= (1<<0); // Запись состояния кнопки button1 в bit_0
-  if (button2) buttonStatus |= (1<<1); // bit_1
-  if (vrbutton1) buttonStatus |= (1<<2); // bit_2
-  if (vrbutton2) buttonStatus |= (1<<3); // bit_3
+  buttonStatus |= (button1 << 0); // Запись состояния кнопки button1 в bit_0
+  buttonStatus |= (button2<<1); // bit_1
+  buttonStatus |= (vrbutton1<<2); // bit_2
+  buttonStatus |= (vrbutton2<<3); // bit_3
 }
 
 // Функция получения данных
@@ -64,6 +64,8 @@ void getData() {
   if (Serial.available() != 0) {
     ledStatus = Serial.read();
   }
+  // [TEST] Записать все биты как 1
+  // ledStatus = 0xFF;
 }
 
 // Функция подачи напряжения на пины светодиодов
@@ -87,6 +89,9 @@ void sendData() {
     Serial.write(vrx2);
     Serial.write(vry2);
     Serial.write(buttonStatus);
+    // [TEST] Отправить в сериал порт символами:
+    //  Serial.print(buttonStatus);
+    // Serial.println();
 }
 
 void setup() {
